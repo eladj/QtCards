@@ -4,13 +4,13 @@ import sys
 from PyQt4.QtCore import *
 from PyQt4.QtGui  import *
 import cardstable
+import random
 
 # extending CardItem
-class CardItem(cardstable.CardItem):
-    def __init__(self, suit, rank, position, angle=0, scale=(1,1)):
-        super(CardItem, self).__init__(suit, rank, position, angle, scale)
-        self.name = suit + "_" + rank
-        self.setAcceptHoverEvents(True) #by default it is set to False
+class CardItemExtend(cardstable.CardItem):
+    #def __init__(self, suit, rank, position, angle=0, scale=(1,1), svgFile=None):
+        #super(CardItemExtend, self).__init__(suit, rank, position, angle, scale, svgFile=None)
+        #self.setAcceptHoverEvents(True) #by Qt default it is set to False
         #self.setFlag(QGraphicsItem.ItemIsSelectable)
         #self.setFlag(QGraphicsItem.ItemIsMovable)
         
@@ -26,13 +26,59 @@ class CardItem(cardstable.CardItem):
         
     def mousePressEvent(self, event):
         #self.update()
-        print(self.name)
+        print(self.getName())
         #print(event.pos().x())
         #print(event.pos().y())
         #print(self.isSelected())
-        self.animateMoveCardToPos(QPointF(300,300))        
+        self.animateCardToPos(QPointF(300,300))        
         
+class cardTableWidgetExtend(cardstable.cardTableWidget):
+    def __init__(self):
+        super(cardTableWidgetExtend, self).__init__()
+ 
+    # flips card faceDown
+    def flipCard(self, cardItem, face='down'):
+        if face=='down':
+            tmp = CardItemExtend(cardItem.suit,cardItem.rank,cardItem.pos, 
+                                 cardItem.angle, cardItem.scale,
+                                 svgFile=self.cardSvgFile('back','1'))
+        else:
+            tmp = CardItemExtend(cardItem.suit,cardItem.rank,cardItem.pos, 
+                                 cardItem.angle, cardItem.scale,
+                                 svgFile=self.cardSvgFile(cardItem.suit,cardItem.rank))                                 
+        self.changeCard(cardItem, tmp)       
         
+    def deal1(self):
+        defScale=0.5        
+        d = self.buildCardDict()
+        inds = range(1,53)
+        random.shuffle(inds)
+        positions = [(100,0),(5,100),(100,300),(300,0)]
+        count = 0
+        positionCounter = 0
+        for n in inds:
+            if count % 13 == 0:
+                pos = positions[positionCounter]
+                positionCounter+=1
+                dx=0
+            suit = d[n][0]
+            rank = d[n][1]
+            c = CardItemExtend(suit,rank,pos,scale=defScale, 
+                                svgFile=self.cardSvgFile(suit,rank))
+            c.setZValue(1)
+            self.addCard(c)
+            dx+=20
+            count += 1
+        
+    def test2(self):
+        types = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
+        x=100
+        for name in types:
+            item = CardItemExtend('club',name,(x,10),scale=0.7,
+                                  svgFile=self.cardSvgFile('club',name))
+            self.scene.addItem(item)
+            x += 40
+        #self.view.show()        
         
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -40,7 +86,7 @@ class MainWindow(QMainWindow):
 
         # create widgets             
         self.label1 = QLabel("Bla Bla")
-        self.cardsTable = cardstable.cardTableWidget()
+        self.cardsTable = cardTableWidgetExtend()
 
         # main layout
         self.mainLayout = QVBoxLayout()
@@ -56,16 +102,15 @@ class MainWindow(QMainWindow):
         # set central widget
         self.setCentralWidget(self.centralWidget)
         
-        #self.cardsTable.test2()
-        defScaleX=0.5
-        defScaleY=0.5
-        c1 = CardItem('club','K',(10,10), scale=(defScaleX,defScaleY))
-        c2 = CardItem('joker','',(100,10), scale=(defScaleX*1.197,defScaleY*1.03))
-        c3 = CardItem('back','1',(10,100), scale=(defScaleX,defScaleY))
-        self.cardsTable.addCard(c1)
-        self.cardsTable.addCard(c2)
-        self.cardsTable.addCard(c3)
-     
+        #self.cardsTable.test2()      
+        #self.cardsTable.changeCard(c2,c4)       
+        #self.cardsTable.flipCard(c3, face='up')
+        #self.cardsTable.removeCard(2)        
+        #print(self.cardsTable.buildCardDict())        
+        #self.cardsTable.scene.addRect(5,-50,140,140,QPen('black'))
+        self.cardsTable.getCardsList()               
+        self.cardsTable.deal1()
+        
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -7,20 +7,11 @@ import cardstable
 import random
       
         
-class cardTableWidgetExtend(cardstable.cardTableWidget):
+class CardTableWidgetExtend(cardstable.cardTableWidget):
+    """ extension of CardTableWidget """
     def __init__(self):
-        super(cardTableWidgetExtend, self).__init__()
-      
+        super(CardTableWidgetExtend, self).__init__()
 
-    def test2(self):
-        types = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
-        x=100
-        for name in types:
-            item = CardItemExtend('club',name,(x,10),scale=0.7,
-                                  svgFile=self.cardSvgFile('club',name))
-            self.scene.addItem(item)
-            x += 40
-        #self.view.show()        
         
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -28,8 +19,12 @@ class MainWindow(QMainWindow):
 
         # create widgets             
         self.label1 = QLabel("Bla Bla")
-        self.cardsTable = cardTableWidgetExtend()
-
+        self.label1.setFont(QFont('Andalus', 24))        
+        self.label1.setAlignment(Qt.AlignCenter)
+        self.label1.setMaximumHeight(30)        
+        self.label1.setStyleSheet("QLabel { background-color : blue; color : white; font: bold }")
+        self.cardsTable = CardTableWidgetExtend()
+        
         # main layout
         self.mainLayout = QVBoxLayout()
 
@@ -40,8 +35,8 @@ class MainWindow(QMainWindow):
         # central widget
         self.centralWidget = QWidget()
         self.centralWidget.setLayout(self.mainLayout)        
-        
-        # set central widget
+#        
+#        # set central widget
         self.setCentralWidget(self.centralWidget)
         
         # PLAYGROUND        
@@ -61,7 +56,8 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     widget = MainWindow()
-    widget.resize(640, 480)
+    widget.setWindowTitle("My Title")
+    widget.setWindowIcon(QIcon('icon.png'))    
     widget.show()
     sys.exit(app.exec_())
 

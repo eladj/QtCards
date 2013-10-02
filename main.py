@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         
         # main layout
         self.mainLayout = QVBoxLayout()
-
+        
         # add all widgets to the main vLayout
         self.mainLayout.addWidget(self.label1)
         self.mainLayout.addWidget(self.cardsTable)
@@ -41,17 +41,16 @@ class MainWindow(QMainWindow):
         
         # PLAYGROUND        
         self.cardsTable.dealDeck()
-#        self.cardsTable.addCard('c_K')
+        #self.cardsTable.addCard('c_K')
+        #self.cardsTable.getCardsList()[0].setPos(0,0)        
 #        self.cardsTable.addCard('d_8')
-#        self.cardsTable.cardsGraphItems[1].setPos(234,120)
 #        self.cardsTable.addCard('j_r')
-#        self.cardsTable.cardsGraphItems[2].setPos(234,80)
 #        self.cardsTable.changeCard(1,'h_J', faceDown=True)
 #        self.cardsTable.removeCard(51)
         
         self.cardsTable.getCardsList()               
 #        self.cardsTable.deal1()
-        
+
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -15,7 +15,8 @@ class QGraphicsViewExtend(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
     
     def resizeEvent(self, event):
-        self.fitInView(QRectF(0,0,640,480),Qt.KeepAspectRatio)
+        #self.fitInView(QRectF(0,0,640,480),Qt.KeepAspectRatio)
+        self.fitInView(QRectF(self.viewport().rect()),Qt.KeepAspectRatio)
 
 class CardGraphicsItem(QtSvg.QGraphicsSvgItem):
     """ Extends QtSvg.QGraphicsSvgItem for card items graphics """ 
@@ -73,16 +74,11 @@ class CardGraphicsItem(QtSvg.QGraphicsSvgItem):
     def hoverLeaveEvent(self, event):
         """ event when mouse leave a card """    
         self.setGraphicsEffect(None) 
-
-
-#class CardItem(object):
-#    """ holds cards item logical details (no graphics here) """
-#    def __init__(self, name, value, player=0, faceDown=False):
-#        self.name = name
-#        self.value = value
-#        self.player = player
-#        self.faceDown = faceDown        
-        
+    
+    
+    def __repr__(self):                
+        return '<CardGraphicsItem: %s>' % self.name
+     
         
 class cardTableWidget(QWidget):     
     """ main widget for handling the card table """
@@ -94,13 +90,15 @@ class cardTableWidget(QWidget):
         """ initialize the view-scene graphic environment """
         self.scene = QGraphicsScene()
         #self.scene.setSceneRect(0, 0, 640, 480)
-        self.view = QGraphicsViewExtend(self.scene)        
-        self.view.setRenderHint(QPainter.Antialiasing)
+        self.view = QGraphicsViewExtend(self.scene)
+        self.view.setSceneRect(QRectF(self.view.viewport().rect()))
+        #self.view.setSceneRect(QRectF(0,0,800,640))
+        self.view.setRenderHint(QPainter.Antialiasing)        
         layout = QGridLayout()
         layout.addWidget(self.view)
         self.setLayout(layout)        
         self.setBackgroundColor(QColor('green'))
-        
+
         # special properties
         self.svgCardsPath = "svg"
         self.cardsGraphItems = [] #holds all the cards items
@@ -118,16 +116,24 @@ class cardTableWidget(QWidget):
 #        c.setPos(0,0)
 #        self.scene.addItem(c)
         print(self.scene.itemAt(110,110))
-        print(self.view.mapFromScene(50,50))
-        print(self.view.mapToScene(50,50))
+        
     
     
     def mousePressEvent(self, event):
         # check if item is a CardGraphicsItem  
-        itemAt = self.view.itemAt(event.pos())       
+        p = event.pos()
+        print(p)
+        p -= QPoint(10,10) #correction to mouse click. not sure why this happen        
+        itemAt = self.view.itemAt(p)       
         if isinstance(itemAt, CardGraphicsItem):
             self.cardPressed(itemAt)
-        print(event.pos())
+        print(p)
+        #print("mapFromScene",end="")
+        #print(self.view.mapFromScene(event.pos()))
+        print("All items at pos: ", end="")
+        print(self.view.items(p))
+        print("view.mapToScene: ",end="")
+        print(self.view.mapToScene(p))
         
     def cardPressed(self, card, animate=True):      
         if animate:

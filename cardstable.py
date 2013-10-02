@@ -19,12 +19,17 @@ class QGraphicsViewExtend(QGraphicsView):
 
 class CardGraphicsItem(QtSvg.QGraphicsSvgItem):
     """ Extends QtSvg.QGraphicsSvgItem for card items graphics """ 
-    def __init__(self, name, ind, svgFile):
+    def __init__(self, name, ind, svgFile, player=0, faceDown=False):
         super(CardGraphicsItem, self).__init__(svgFile)
         # special properties
         self.name = name        
-        self.ind = ind
-        self.svgFile = svgFile
+        self.ind = ind # index
+        self.svgFile = svgFile # svg file for card graphics
+        self.player = player # which player holds the card
+        self.faceDown = faceDown # does the card faceDown
+        self.anim = QPropertyAnimation(self, 'pos') # will use to animate card movement
+        
+        #default properties
         self.setAcceptHoverEvents(True) #by Qt default it is set to False                 
         
     
@@ -70,13 +75,13 @@ class CardGraphicsItem(QtSvg.QGraphicsSvgItem):
         self.setGraphicsEffect(None) 
 
 
-class CardItem(object):
-    """ holds cards item logical details (no graphics here) """
-    def __init__(self, name, value, player=0, faceDown=False):
-        self.name = name
-        self.value = value
-        self.player = player
-        self.faceDown = faceDown        
+#class CardItem(object):
+#    """ holds cards item logical details (no graphics here) """
+#    def __init__(self, name, value, player=0, faceDown=False):
+#        self.name = name
+#        self.value = value
+#        self.player = player
+#        self.faceDown = faceDown        
         
         
 class cardTableWidget(QWidget):     
@@ -94,10 +99,10 @@ class cardTableWidget(QWidget):
         layout = QGridLayout()
         layout.addWidget(self.view)
         self.setLayout(layout)        
-        self.setBackgroundColor(QColor('green'))     
+        self.setBackgroundColor(QColor('green'))
+        
         # special properties
         self.svgCardsPath = "svg"
-        self.cardsList = [] #holds all the cards names
         self.cardsGraphItems = [] #holds all the cards items
         self.defInsertionPos = QPointF(0,0)
         self.defAngle = 0
@@ -115,7 +120,7 @@ class cardTableWidget(QWidget):
         print(self.scene.itemAt(110,110))
         print(self.view.mapFromScene(50,50))
         print(self.view.mapToScene(50,50))
-        
+    
     
     def mousePressEvent(self, event):
         # check if item is a CardGraphicsItem  
@@ -124,14 +129,20 @@ class cardTableWidget(QWidget):
             self.cardPressed(itemAt)
         print(event.pos())
         
-    def cardPressed(self, card):      
+    def cardPressed(self, card, animate=True):      
+        if animate:
+            card.anim.setDuration(150)
+            #anim.setStartValue(self.pos())
+            card.anim.setEndValue(self.getCenterPoint())        
+            card.anim.start() 
+        else:
+            card.setPos(self.getCenterPoint())            
         print("Card Played: " + card.name)
-        card.setPos(200,200)
-     
-     
+
+
     def getCenterPoint(self)        :
-        """ finds screen center point """
-        rect = self.geometry()       
+        """ finds screen center point """       
+        rect = self.view.geometry()       
         print(rect)
         return QPointF(rect.width()/2,rect.height()/2)       
 
@@ -153,7 +164,7 @@ class cardTableWidget(QWidget):
         return fn
 
             
-    def addCard(self, name, faceDown=False, player=0):
+    def addCard(self, name, player=0, faceDown=False):
         """ adds CardGraphicsItem graphics to board.
         also updates the total cards list
         """        
@@ -163,31 +174,32 @@ class cardTableWidget(QWidget):
         else:
             svgFile = self.cardSvgFile(name)
         
-        self.cardsList.append(CardItem(name,self.value(name),player,faceDown))
-        ind = len(self.cardsGraphItems) + 1
-        tmp = CardGraphicsItem(name, ind, svgFile)        
+        # create CardGraphicsItem instance
+        ind = len(self.getCardsList()) + 1
+        tmp = CardGraphicsItem(name, ind, svgFile, player, faceDown)        
         tmp.setScale(self.defScale)
-        tmp.setZValue(ind) # set ZValue as index (last in is up)                
-        tmp.centerPoint = self.getCenterPoint()
-        self.cardsGraphItems.append(tmp)
-        self.scene.addItem(self.cardsGraphItems[-1])
+        tmp.setZValue(ind) # set ZValue as index (last in is up)        
+#        self.cardsGraphItems.append(tmp)
+        self.scene.addItem(tmp)
         # sanity check
-        self.checkLists()
+        
         #print("num of cards=" + str(len(self.cardsList)))
 
 
-    def removeCard(self, cardIndex):
+    def removeCard(self, card):
         """ removes CardGraphicsItem graphics from board 
         also removes from the total cards list
         """
-        self.scene.removeItem(self.cardsGraphItems[cardIndex])
-        self.cardsGraphItems.pop(cardIndex)        
-        self.cardsList.pop(cardIndex)
-        self.checkLists()
-        #print("num of cards=" + str(len(self.cardsList)))
+        if isinstance(card,int):
+            allCards = self.getCardsList()
+            indices = [c.ind for c in allCards]
+            ind = indices.index(card)            
+            self.scene.removeItem(allCards[ind])            
+        if isinstance(card,CardGraphicsItem):
+            self.scene.removeItem(card)
 
 
-    # replaces CardGraphicsItem
+    # TODO - UPDATE THIS FUNCTION
     def changeCard(self, cardIndRemove, nameToAdd, faceDown=False):       
         """ replace CardGraphicsItem         
         keeps same index and ZValue !
@@ -216,48 +228,17 @@ class cardTableWidget(QWidget):
         self.checkLists()
 
 
-    def checkLists(self):
-        """ sanity check """
-        if len(self.cardsList) != len(self.cardsGraphItems):
-            print("WARNING !!! -> cardsList != cardsGraphItems")
-
-
     def getCardsList(self):
-        """ prints cards list """
+        """ returns and prints all CardGraphicsItem in scene (disregard other graphics items) """        
+        itemsOut=[]
         print("Cards List:")
-        n=1
-        for item in self.cardsList:
-            print("Ind=%3d | Name=%4s | Value= %3d | Player=%d | faceDown=%r " % \
-                 (n, item.name, item.value, item.player, item.faceDown) )
-            n += 1
-
-
-    def suit(self, name):
-        """ get card suit type """    
-        return name.split("_")[0]
-    
-    
-    def rank(self, name):    
-        """ get card rank type """        
-        return name.split("_")[1]
-        
-    
-    def value(self, name):        
-        """ return card value in number, by their rank """
-        if self.suit(name)=='j':
-            return 99
-        rank = self.rank(name)
-        if rank == 'A':
-            value = 14
-        elif rank == 'K':
-            value = 13
-        elif rank == 'Q':
-            value = 12            
-        elif rank == 'J':
-            value = 11
-        else:
-            value = int(rank)        
-        return value
+        for item in self.scene.items():
+            if isinstance(item,CardGraphicsItem):                
+                itemsOut.append(item)
+                print("Ind=%3d | Name=%4s | Value= %3d | Player=%d | faceDown=%r " % \
+                     (item.ind, item.name, item.getValue(), item.player, item.faceDown) )                
+        print("Total cards num = " + str(len(itemsOut)))
+        return itemsOut
         
 
     def buildDeckList(self,with_joker=False):
@@ -284,10 +265,11 @@ class cardTableWidget(QWidget):
         dy = [self.defHandSpacing,0,self.defHandSpacing,0]        
         x, y, ang = self.playersHandsPos[playerNum-1]
         for card in d:            
-            self.addCard(card,player=playerNum)
-            self.cardsGraphItems[-1].setPos(x+dx[playerNum-1]*c2,
-                                            y+dy[playerNum-1]*c2)
-            self.cardsGraphItems[-1].rotate(ang)
+            self.addCard(card,player=playerNum)            
+            self.getCardsList()[0].setPos(x+dx[playerNum-1]*c2,
+                                           y+dy[playerNum-1]*c2)
+            self.getCardsList()[0].rotate(ang)
+            
             if n % (52 / self.numOfPlayers) == 0:
                 playerNum += 1                
                 if playerNum > self.numOfPlayers:
@@ -295,23 +277,8 @@ class cardTableWidget(QWidget):
                 x, y, ang = self.playersHandsPos[playerNum-1]
                 c2=0
             n += 1
-            c2 += 1
+            c2 += 1        
 
-        
-    def test1(self):
-        c = CardGraphicsItem('club','3',(50,5),-20)
-        self.scene.addItem(c)
-        c2 = CardGraphicsItem('heart','Q',(200,100),100,1.5)
-        self.scene.addItem(c2)
-        
-        
-    def test2(self):
-        types = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
-        x=100
-        for name in types:
-            self.scene.addItem(CardGraphicsItem('club',name,(x,10),scale=0.7))
-            x += 40
-        #self.view.show()
 
 
 def main():

@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
 #        self.cardsTable.addCard('j_r')
 #        self.cardsTable.cardsGraphItems[2].setPos(234,80)
 #        self.cardsTable.changeCard(1,'h_J', faceDown=True)
-#        self.cardsTable.removeCard(1)
+#        self.cardsTable.removeCard(51)
         
         self.cardsTable.getCardsList()               
 #        self.cardsTable.deal1()
